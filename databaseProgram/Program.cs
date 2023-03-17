@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace databaseProgram
 {
@@ -19,7 +20,7 @@ namespace databaseProgram
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
             List<Pilot> listOfPilots = new List<Pilot>();
             List<Flight> listOfFlights = new List<Flight>();
-            login();
+            adminPanel();
             
         }
         static void login()
@@ -28,9 +29,12 @@ namespace databaseProgram
             string usernameInput = Console.ReadLine().ToLower();
             Console.WriteLine("Enter Password");
             string passwordInput = Console.ReadLine();
-            verifyDetails(usernameInput, passwordInput);
+            if (verifyDetails(usernameInput, passwordInput))
+            {
+
+            }
         }
-        static void verifyDetails(string usernameEntered, string passwordEntered)
+        static bool verifyDetails(string usernameEntered, string passwordEntered)
         {
             string message = ("Username or Password incorrect");
             try
@@ -57,11 +61,12 @@ namespace databaseProgram
             }
             if (message == "1")
             {
-                Console.WriteLine("kmdfdkm es");
+                return true;
             }
             else
             {
                 Console.WriteLine(message, "Info");
+                return false;
             }
         }
         static void adminPanel()
@@ -106,11 +111,31 @@ namespace databaseProgram
         }
         static void appendUser()
         {
+            List<string> allUsernames = fieldToList("Username", "Users");
             bool _continue = true;
+            bool _dupeUsername = true;
+            string usernameToAdd = "";
             while (_continue)
             {
-                Console.WriteLine("Enter username to add");
-                string usernameToAdd = Console.ReadLine().ToLower();
+                while (_dupeUsername)
+                {
+                    Console.WriteLine("Enter username to add");
+                    usernameToAdd = Console.ReadLine().ToLower();
+                    if (allUsernames.Contains(usernameToAdd))
+                    {
+                        Console.WriteLine("Username is taken, try another.");
+                    }
+                    else if (!allUsernames.Contains(usernameToAdd))
+                    {
+                        _dupeUsername = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error.");
+                    }
+                }
+
+                
                 Console.WriteLine("Enter password for user");
                 string passwordToAdd = PasswordHash.Hash(Console.ReadLine());
                 Console.WriteLine("Enter users Pilot ID");
@@ -145,6 +170,25 @@ namespace databaseProgram
                 }
             }
 
+        }
+        static List<string> fieldToList(string field, string table)
+        {
+
+            List<string> usersList = new List<string>();
+            using (cmd = connection.CreateCommand())
+            {
+                cmd.CommandType = System.Data.CommandType.Text;
+                cmd.CommandText = @"SELECT " + field + " FROM " + table;
+                cmd.Connection.Open();
+                using (var reader = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+                {
+                    while (reader.Read())
+                    {
+                        usersList.Add(reader[field].ToString());
+                    }
+                }
+            }
+            return usersList;
         }
     }
 
