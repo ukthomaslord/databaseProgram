@@ -14,29 +14,65 @@ namespace databaseProgram
         static SqlCommand cmd;
         static SqlDataReader reader;
         static SqlDataAdapter adapter = new SqlDataAdapter();
-        int currentUser;
+        static int currentUser = 2;
         static void Main(string[] args)
         {
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
             List<Pilot> listOfPilots = new List<Pilot>();
             List<Flight> listOfFlights = new List<Flight>();
-            adminPanel();
-            
+            adminPanel();       
         }
         static void login()
         {
-            Console.WriteLine("Enter Username");
-            string usernameInput = Console.ReadLine().ToLower();
-            Console.WriteLine("Enter Password");
-            string passwordInput = Console.ReadLine();
-            if (verifyDetails(usernameInput, passwordInput))
+            bool retry = false;
+            while (!retry)
             {
-
+                Console.WriteLine("Enter Username");
+                string usernameInput = Console.ReadLine().ToLower();
+                Console.WriteLine("Enter Password");
+                string passwordInput = Console.ReadLine();
+                if (verifyDetails(usernameInput, passwordInput))
+                {
+                    retry = false;
+                    //Open app
+                }
             }
+        }
+        static void changePassword()
+        {
+            bool matchingPasswords = false;
+            while (!matchingPasswords)
+            {
+                Console.WriteLine("Enter your new password");
+                string newPassword = PasswordHash.Hash(Console.ReadLine());
+                Console.WriteLine("Verify Password");
+                if (PasswordHash.Verify(Console.ReadLine(), newPassword))
+                {
+                    matchingPasswords = true;
+                    try
+                    {
+                        connection.Open();
+                        cmd = new SqlCommand("UPDATE Users SET Password = @newPassword Where USERID = @UserID", connection);
+                        cmd.Parameters.AddWithValue("@UserID", currentUser);
+                        cmd.Parameters.AddWithValue("@newPassword", newPassword);
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Your passwords do not match");
+                }
+            }
+
         }
         static bool verifyDetails(string usernameEntered, string passwordEntered)
         {
             string message = ("Username or Password incorrect");
+            int userID = 0;
             try
             {
                 connection.Open();
@@ -45,9 +81,12 @@ namespace databaseProgram
                 reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
-                    var result = PasswordHash.Verify(passwordEntered, reader["Password"].ToString());
+                    bool result = PasswordHash.Verify(passwordEntered, reader["Password"].ToString());
+                    //not working!!!!!!!
+                    Console.WriteLine(reader["Password"].ToString());
                     if (result == true)
                     {
+                        userID = Convert.ToInt32(reader["USERID"]);
                         message = "1";
                     }
                 }
@@ -61,6 +100,7 @@ namespace databaseProgram
             }
             if (message == "1")
             {
+                currentUser = userID;
                 return true;
             }
             else
