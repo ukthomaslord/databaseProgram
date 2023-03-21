@@ -18,9 +18,12 @@ namespace databaseProgram
         static void Main(string[] args)
         {
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
-            List<Pilot> listOfPilots = new List<Pilot>();
-            List<Flight> listOfFlights = new List<Flight>();
             login();
+        }
+        static string takeInput()
+        {
+            Console.Write("> ");
+            return Console.ReadLine();
         }
         static void login()
         {
@@ -28,9 +31,13 @@ namespace databaseProgram
             while (!retry)
             {
                 Console.WriteLine("Enter Username");
-                string usernameInput = Console.ReadLine().ToLower();
+                string usernameInput = takeInput().ToLower();
+                if (usernameInput == "admin")
+                {
+                    adminPanel();
+                }
                 Console.WriteLine("Enter Password");
-                string passwordInput = Console.ReadLine();
+                string passwordInput = takeInput();
                 if (verifyDetails(usernameInput, passwordInput))
                 { 
                     try
@@ -53,6 +60,7 @@ namespace databaseProgram
                                 changePassword();
                                 connection.Close();
                             }
+                            userMenu();
                         }
                         reader.Close();
                         cmd.Dispose();
@@ -67,15 +75,47 @@ namespace databaseProgram
                 }
             }
         }
+        static void userMenu()
+        {
+            Console.WriteLine("Menu \n1) See all flights.\n2)Account settings.");
+            bool validOption = false;
+            while (!validOption)
+            {
+                int userOption = Convert.ToInt32(takeInput());
+                switch (userOption)
+                {
+                    case 1:
+                        validOption = true;
+                        seeFlights();
+                        break;
+                    default:
+                        Console.WriteLine("Invalid option. Re-Enter option:");
+                        break;
+                }
+            }
+
+        }
+        static void seeFlights()
+        {
+            List<Flight> listOfFlights = new List<Flight>();
+            Flight james = new Flight("010101", "Barbados");
+            
+            foreach (Flight i in listOfFlights)
+            {
+                Console.WriteLine("Flight number: ", i.getFlightNumer().ToString());
+                Console.WriteLine("Destination: ", i.getDestination());
+                Console.WriteLine("Pilot number: ", i.getPilotNumber().ToString());
+            }
+        }
         static void changePassword()
         {
             bool matchingPasswords = false;
             while (!matchingPasswords)
             {
                 Console.WriteLine("Enter your new password");
-                string newPassword = PasswordHash.Hash(Console.ReadLine());
+                string newPassword = PasswordHash.Hash(takeInput());
                 Console.WriteLine("Verify Password");
-                if (PasswordHash.Verify(Console.ReadLine(), newPassword))
+                if (PasswordHash.Verify(takeInput(), newPassword))
                 {
                     matchingPasswords = true;
                     try
@@ -112,10 +152,6 @@ namespace databaseProgram
             int userID = 0;
             try
             {
-                if (cmd.Connection.State == ConnectionState.Open)
-                {
-                    cmd.Connection.Close();
-                }
                 connection.Open();
                 cmd = new SqlCommand("Select * from Users where Username=@Username", connection);
                 cmd.Parameters.AddWithValue("@Username", usernameEntered);
@@ -161,7 +197,7 @@ namespace databaseProgram
             while (!valid)
             {
                 Console.WriteLine("Enter password");
-                string userInput = Console.ReadLine();
+                string userInput = takeInput();
 
            
                 foreach (string password in adminPasswords)
@@ -191,6 +227,7 @@ namespace databaseProgram
         static void appendUser()
         {
             List<string> allUsernames = fieldToList("Username", "Users");
+            allUsernames.Add("admin");
             bool _continue = true;
             bool _dupeUsername = true;
             string usernameToAdd = "";
@@ -199,7 +236,7 @@ namespace databaseProgram
                 while (_dupeUsername)
                 {
                     Console.WriteLine("Enter username to add");
-                    usernameToAdd = Console.ReadLine().ToLower();
+                    usernameToAdd = takeInput().ToLower();
                     if (allUsernames.Contains(usernameToAdd))
                     {
                         Console.WriteLine("Username is taken, try another.");
@@ -216,9 +253,9 @@ namespace databaseProgram
 
                 
                 Console.WriteLine("Enter password for user");
-                string passwordToAdd = PasswordHash.Hash(Console.ReadLine());
+                string passwordToAdd = PasswordHash.Hash(takeInput());
                 Console.WriteLine("Enter users Pilot ID");
-                int userIdToAdd = Convert.ToInt32(Console.ReadLine());
+                int userIdToAdd = Convert.ToInt32(takeInput());
 
                 var sql = "INSERT INTO Users(Username, Password, PilotNo, Activated) VALUES(@usernameToAdd, @passwordToAdd, @userIdToAdd, @Activated)";
                 try
@@ -246,7 +283,7 @@ namespace databaseProgram
                 }
 
                 Console.WriteLine("Add another? Y/N");
-                string userInput = Console.ReadLine().ToLower();
+                string userInput = takeInput().ToLower();
                 if (userInput == "n")
                 {
                     _continue = false;
@@ -295,13 +332,33 @@ namespace databaseProgram
     }
     class Flight
     {
-        Pilot _pilot = new Pilot();
         private string flightNumber;
         private int pilotNumber;
         private string destination;
+        public Flight(string _flightNumber, string _destination)
+        {
+            flightNumber = _flightNumber;
+            destination = _destination;
+        }
+        public string getFlightNumer()
+        {
+            return flightNumber;
+        }
+        public int getPilotNumber()
+        {
+            return pilotNumber;
+        }
+        public string getDestination()
+        {
+            return destination;
+        }
         public void assignPilot()
         {
-            pilotNumber = _pilot.get_pilotNumber();
+            
+        }
+        public void getWeatherInfo()
+        {
+
         }
 
     }
