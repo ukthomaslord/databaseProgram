@@ -20,7 +20,7 @@ namespace databaseProgram
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
             List<Pilot> listOfPilots = new List<Pilot>();
             List<Flight> listOfFlights = new List<Flight>();
-            adminPanel();       
+            login();
         }
         static void login()
         {
@@ -32,9 +32,38 @@ namespace databaseProgram
                 Console.WriteLine("Enter Password");
                 string passwordInput = Console.ReadLine();
                 if (verifyDetails(usernameInput, passwordInput))
-                {
-                    retry = false;
-                    //Open app
+                { 
+                    try
+                    {
+                        if (cmd.Connection.State == ConnectionState.Open)
+                        {
+                            cmd.Connection.Close();
+                        }
+                        connection.Open();
+                        cmd = new SqlCommand("Select USERID, Activated FROM Users Where Username = @Username", connection);
+                        cmd.Parameters.AddWithValue("@Username", usernameInput);
+                        reader = cmd.ExecuteReader();
+                        if (reader.Read())
+                        {
+                            currentUser = Convert.ToInt32(reader["USERID"]);
+                            int _activated = Convert.ToInt32(reader["Activated"]);
+                            if (_activated == 0)
+                            {
+                                Console.WriteLine("Your account hasn't been activated yet.");
+                                changePassword();
+                                connection.Close();
+                            }
+                        }
+                        reader.Close();
+                        cmd.Dispose();
+                        connection.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message.ToString());
+                    }
+                    retry = true;
+                    
                 }
             }
         }
@@ -51,11 +80,19 @@ namespace databaseProgram
                     matchingPasswords = true;
                     try
                     {
+                        if (cmd.Connection.State == ConnectionState.Open)
+                        {
+                            cmd.Connection.Close();
+                        }
                         connection.Open();
-                        cmd = new SqlCommand("UPDATE Users SET Password = @newPassword Where USERID = @UserID", connection);
+                        cmd = new SqlCommand("UPDATE Users SET Password = @newPassword, Activated = @changeActivated Where USERID = @UserID", connection);
                         cmd.Parameters.AddWithValue("@UserID", currentUser);
                         cmd.Parameters.AddWithValue("@newPassword", newPassword);
+                        cmd.Parameters.AddWithValue("@changeActivated", 1);
                         cmd.ExecuteNonQuery();
+                        Console.WriteLine("Password updated.");
+                        connection.Close();
+
                     }
                     catch (Exception ex)
                     {
@@ -75,6 +112,10 @@ namespace databaseProgram
             int userID = 0;
             try
             {
+                if (cmd.Connection.State == ConnectionState.Open)
+                {
+                    cmd.Connection.Close();
+                }
                 connection.Open();
                 cmd = new SqlCommand("Select * from Users where Username=@Username", connection);
                 cmd.Parameters.AddWithValue("@Username", usernameEntered);
@@ -82,8 +123,6 @@ namespace databaseProgram
                 if (reader.Read())
                 {
                     bool result = PasswordHash.Verify(passwordEntered, reader["Password"].ToString());
-                    //not working!!!!!!!
-                    Console.WriteLine(reader["Password"].ToString());
                     if (result == true)
                     {
                         userID = Convert.ToInt32(reader["USERID"]);
@@ -187,6 +226,10 @@ namespace databaseProgram
 
                     using (connection)
                     {
+                        if (cmd.Connection.State == ConnectionState.Open)
+                        {
+                            cmd.Connection.Close();
+                        }
                         connection.Open();
                         SqlCommand insCmd = new SqlCommand(sql, connection);
                         insCmd.Parameters.AddWithValue("@usernameToAdd", usernameToAdd);
@@ -219,6 +262,10 @@ namespace databaseProgram
             {
                 cmd.CommandType = System.Data.CommandType.Text;
                 cmd.CommandText = @"SELECT " + field + " FROM " + table;
+                if (cmd.Connection.State == ConnectionState.Open)
+                {
+                    cmd.Connection.Close();
+                }
                 cmd.Connection.Open();
                 using (var reader = cmd.ExecuteReader(CommandBehavior.CloseConnection))
                 {
