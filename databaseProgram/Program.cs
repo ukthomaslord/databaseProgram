@@ -14,16 +14,30 @@ namespace databaseProgram
         static SqlCommand cmd;
         static SqlDataReader reader;
         static SqlDataAdapter adapter = new SqlDataAdapter();
+        static Stack navStack = new Stack();
+        static List<string> commands = new List<string>();
         static int currentUser = 2;
         static void Main(string[] args)
         {
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
             login();
         }
-        static string takeInput()
+        static string? takeInput()
         {
             Console.Write("> ");
-            return Console.ReadLine();
+            string userInput = Console.ReadLine();
+            if (commands.Contains(userInput))
+            {
+                int i = commands.IndexOf(userInput);
+                switch (i)
+                {
+                    case 0:
+                        navStack.pop();
+                        navStack.peek();
+                        break;
+                }
+            }
+            return userInput;
         }
         static void login()
         {
@@ -60,6 +74,7 @@ namespace databaseProgram
                                 changePassword();
                                 connection.Close();
                             }
+                            navStack.push("login");
                             userMenu();
                         }
                         reader.Close();
@@ -205,6 +220,7 @@ namespace databaseProgram
                     if (PasswordHash.Verify(userInput, password))
                     {
                         valid = true;
+                        navStack.push("adminPanel");
                         appendUser();
                         break;
                     }
@@ -231,6 +247,7 @@ namespace databaseProgram
             bool _continue = true;
             bool _dupeUsername = true;
             string usernameToAdd = "";
+            navStack.push("appendUser");
             while (_continue)
             {
                 while (_dupeUsername)
@@ -435,5 +452,61 @@ namespace databaseProgram
             }
             return true;
         }
+    }
+    class Stack
+    {
+        private int StackPointer = -1;
+        private List<string> _stack = new List<string>();
+        private bool stackEmpty()
+        {
+            if (StackPointer == -1)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public void push(string value)
+        {
+            try
+            {
+                _stack.Add(value);
+                StackPointer++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+        public string? pop()
+        {
+            bool _stackEmpty = stackEmpty();
+            if (_stackEmpty == false)
+            {
+                var popValue = _stack[StackPointer];
+                StackPointer--;
+                return popValue;
+            }
+            else
+            {
+                Console.WriteLine("You cannot go back any further.");
+                return null;
+            }
+        }
+        public string? peek()
+        {
+            bool _stackEmpty = stackEmpty();
+            if (!_stackEmpty)
+            {
+                return _stack[StackPointer];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
     }
 }
