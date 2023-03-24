@@ -16,9 +16,14 @@ namespace databaseProgram
         static SqlDataAdapter adapter = new SqlDataAdapter();
         static Stack navStack = new Stack();
         static List<string> commands = new List<string>();
-        static int currentUser = 2;
+        static int currentUser;
         static void Main(string[] args)
         {
+            string[] textCommand = { "back" };
+            foreach (string i in textCommand)
+            {
+                commands.Add(i);
+            }
             connection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=F:\c#\databaseProgram\databaseProgram\Database1.mdf;Integrated Security=True");
             login();
         }
@@ -33,25 +38,63 @@ namespace databaseProgram
                 {
                     case 0:
                         navStack.pop();
-                        navStack.peek();
+                        stackFunc(navStack.peek());
                         break;
                 }
             }
             return userInput;
         }
+        static string? takeUserPass()
+        {
+            Console.Write("> ");
+            return Console.ReadLine();
+        }
+        static int? getIndexOfArray(string[] arrayToSearch, string itemToFind)
+        {
+            int counter = 0;
+            foreach (string i in arrayToSearch)
+            {
+                if (i == itemToFind)
+                {
+                    return counter;
+                }
+                counter++;
+            }
+            return null;
+        }
+        static void stackFunc(string popValue)
+        {
+            string[] functions = {"login", "adminPanel", "appendUser"};
+            switch (getIndexOfArray(functions, popValue))
+            {
+                case 0:
+                    login();
+                    break;
+                case 1:
+                    adminPanel();
+                    break;
+                case 2:
+                    appendUser();
+                    break;
+                default:
+                    Console.WriteLine("Cannot go back.");
+                    break;
+            }
+        }
         static void login()
         {
             bool retry = false;
+            currentUser = 0;
             while (!retry)
             {
                 Console.WriteLine("Enter Username");
-                string usernameInput = takeInput().ToLower();
+                string usernameInput = takeUserPass().ToLower();
                 if (usernameInput == "admin")
                 {
                     adminPanel();
                 }
                 Console.WriteLine("Enter Password");
-                string passwordInput = takeInput();
+                string passwordInput = takeUserPass();
                 if (verifyDetails(usernameInput, passwordInput))
                 { 
                     try
@@ -66,6 +109,7 @@ namespace databaseProgram
                         reader = cmd.ExecuteReader();
                         if (reader.Read())
                         {
+                            Console.Clear();
                             currentUser = Convert.ToInt32(reader["USERID"]);
                             int _activated = Convert.ToInt32(reader["Activated"]);
                             if (_activated == 0)
@@ -92,7 +136,7 @@ namespace databaseProgram
         }
         static void userMenu()
         {
-            Console.WriteLine("Menu \n1) See all flights.\n2)Account settings.");
+            Console.WriteLine("Menu \n1) See all flights.\n2) Account settings.");
             bool validOption = false;
             while (!validOption)
             {
@@ -128,9 +172,9 @@ namespace databaseProgram
             while (!matchingPasswords)
             {
                 Console.WriteLine("Enter your new password");
-                string newPassword = PasswordHash.Hash(takeInput());
+                string newPassword = PasswordHash.Hash(takeUserPass());
                 Console.WriteLine("Verify Password");
-                if (PasswordHash.Verify(takeInput(), newPassword))
+                if (PasswordHash.Verify(takeUserPass(), newPassword))
                 {
                     matchingPasswords = true;
                     try
@@ -212,7 +256,7 @@ namespace databaseProgram
             while (!valid)
             {
                 Console.WriteLine("Enter password");
-                string userInput = takeInput();
+                string userInput = takeUserPass();
 
            
                 foreach (string password in adminPasswords)
@@ -253,7 +297,7 @@ namespace databaseProgram
                 while (_dupeUsername)
                 {
                     Console.WriteLine("Enter username to add");
-                    usernameToAdd = takeInput().ToLower();
+                    usernameToAdd = takeUserPass().ToLower();
                     if (allUsernames.Contains(usernameToAdd))
                     {
                         Console.WriteLine("Username is taken, try another.");
@@ -270,9 +314,9 @@ namespace databaseProgram
 
                 
                 Console.WriteLine("Enter password for user");
-                string passwordToAdd = PasswordHash.Hash(takeInput());
+                string passwordToAdd = PasswordHash.Hash(takeUserPass());
                 Console.WriteLine("Enter users Pilot ID");
-                int userIdToAdd = Convert.ToInt32(takeInput());
+                int userIdToAdd = Convert.ToInt32(takeUserPass());
 
                 var sql = "INSERT INTO Users(Username, Password, PilotNo, Activated) VALUES(@usernameToAdd, @passwordToAdd, @userIdToAdd, @Activated)";
                 try
