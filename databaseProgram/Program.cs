@@ -17,8 +17,10 @@ namespace databaseProgram
         static Stack navStack = new Stack();
         static List<string> commands = new List<string>();
         static int currentUser;
+        static List<Flight> listOfFlights = new List<Flight>();
         static void Main(string[] args)
         {
+            string str = System.IO.File.ReadAllText(@"F:\c#\databaseProgram\databaseProgram\Flights2.sql");
             string[] textCommand = { "back" };
             foreach (string i in textCommand)
             {
@@ -156,14 +158,53 @@ namespace databaseProgram
         }
         static void seeFlights()
         {
-            List<Flight> listOfFlights = new List<Flight>();
-            Flight james = new Flight("010101", "Barbados");
-            
+            flightsToList();
+            //Console.Clear();
             foreach (Flight i in listOfFlights)
             {
-                Console.WriteLine("Flight number: ", i.getFlightNumer().ToString());
-                Console.WriteLine("Destination: ", i.getDestination());
-                Console.WriteLine("Pilot number: ", i.getPilotNumber().ToString());
+                Console.WriteLine("Flight number: "+ i._flightNumber.ToString());
+                Console.WriteLine("Destination: "+ i._destination);
+                Console.WriteLine("Pilot number: "+ i._pilotNumber.ToString());
+                Console.WriteLine("---------------------");
+            }
+        }
+        static void flightsToList()
+        {
+            using (connection)
+            {
+                try
+                {
+                    if (cmd.Connection.State == ConnectionState.Open)
+                    {
+                        cmd.Connection.Close();
+                    }
+                    connection.Open();
+                    SqlCommand command = new SqlCommand("SELECT FlightNo, PilotNo, Outbound, Destination, Date FROM Flights", connection);
+                    reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        //null or sum
+                        string _flightNumber = reader["FlightNo"].ToString();
+                        int _pilotNo;
+                        if (reader["PilotNo"] == null)
+                        {
+                            _pilotNo = 0;
+                        }
+                        else
+                        {
+                            _pilotNo = Convert.ToInt32(reader["PilotNo"]);
+                        }
+                        string _outbound = reader["Outbound"].ToString();
+                        string _destination = reader["Destination"].ToString();
+                        DateTime _date = Convert.ToDateTime(reader["Date"]);
+                        Flight _flight = new Flight(_flightNumber, _pilotNo, _outbound, _destination, _date);
+                        listOfFlights.Add(_flight);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
             }
         }
         static void changePassword()
@@ -381,41 +422,103 @@ namespace databaseProgram
     {
         private int pilotNumber;
         private string name;
-
-        public int get_pilotNumber()
+        public Pilot(int _pilotNumber, string _name)
         {
-            return pilotNumber;
+            pilotNumber = _pilotNumber;
+            name = _name;
         }
-        public string get_pilotName()
+        public int _pilotNumber
         {
-            return name;
+            get
+            {
+                return pilotNumber;
+            }
+            set
+            {
+                pilotNumber = _pilotNumber;
+            }
+        }
+        public string _name
+        {
+            get
+            {
+                return name;
+            }
+            set
+            {
+                name = _name;
+            }
         }
     }
     class Flight
     {
         private string flightNumber;
         private int pilotNumber;
+        private string outbound;
         private string destination;
-        public Flight(string _flightNumber, string _destination)
+        private DateTime date;
+        public Flight(string _flightNumber, int _pilotNumber, string _outbound, string _destination, DateTime _date)
         {
             flightNumber = _flightNumber;
+            pilotNumber = _pilotNumber;
+            outbound = _outbound;
             destination = _destination;
+            date = _date;
         }
-        public string getFlightNumer()
+        public string _flightNumber
         {
-            return flightNumber;
+            get
+            {
+                return flightNumber;
+            }
+            set
+            {
+                flightNumber = _flightNumber;
+            }
         }
-        public int getPilotNumber()
+        public int _pilotNumber
         {
-            return pilotNumber;
+            get
+            {
+                return pilotNumber;
+            }
+            set
+            {
+                pilotNumber = _pilotNumber;
+            }
         }
-        public string getDestination()
+        public string _outbound
         {
-            return destination;
+            get
+            {
+                return outbound;
+            }
+            set
+            {
+                outbound = _outbound;
+            }
         }
-        public void assignPilot()
+        public string _destination
         {
-            
+            get
+            {
+                return destination;
+            }
+            set
+            {
+                destination = _destination;
+            }
+        }
+        public DateTime _date
+        {
+            get
+            {
+                return date;
+            }
+            set
+            {
+                date = _date;
+            }
         }
         public void getWeatherInfo()
         {
